@@ -1,0 +1,49 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+# --- Physics Constants & Setup ---
+G = 1.0  # Gravitational constant (normalized for simplicity)
+
+# Initial conditions: [Sun, Planet 1, Planet 2, Planet 3]
+masses = np.array([1000.0, 1.0, 2.0, 0.5])
+
+# Positions (x, y)
+positions = np.array([
+    [0.0, 0.0],     # Sun
+    [5.0, 0.0],     # Planet 1
+    [8.0, 0.0],     # Planet 2
+    [11.0, 0.0]     # Planet 3
+])
+
+# Velocities (vx, vy) - set for roughly circular orbits (v = sqrt(G*M/r))
+velocities = np.array([
+    [0.0, 0.0],
+    [0.0, 14.1],
+    [0.0, 11.2],
+    [0.0, 9.5]
+])
+
+num_bodies = len(masses)
+
+def compute_accelerations(pos):
+    """Calculates gravitational acceleration for all bodies using NumPy broadcasting."""
+    acc = np.zeros_like(pos)
+    for i in range(num_bodies):
+        # Vector from body i to all other bodies
+        diff = pos - pos[i] 
+        # Distances squared
+        dist_sq = np.sum(diff**2, axis=1)
+        # Avoid division by zero for the body itself
+        dist_sq[i] = np.inf 
+        
+        # Newton's Law of Gravitation: a = G * m_j * r_ij / |r_ij|^3
+        inv_dist_cubed = 1.0 / (dist_sq * np.sqrt(dist_sq))
+        forces = G * masses[:, np.newaxis] * diff * inv_dist_cubed[:, np.newaxis]
+        
+        # Sum forces acting on body i and assign acceleration
+        acc[i] = np.sum(forces, axis=0)
+    return acc
+
+# --- Symplectic Leapfrog Integration Step ---
+dt = 0
